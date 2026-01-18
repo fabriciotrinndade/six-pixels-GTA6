@@ -1,62 +1,156 @@
-const character = document.querySelector('.character');
-const rock = document.querySelector('.rock');
+const canvas = document.getElementById("game");
+const board = document.querySelector(".game-board");
+const ctx = canvas.getContext("2d");
 
-//start game
+function resizeCanvas() {
+  canvas.width = board.clientWidth;
+  canvas.height = board.clientHeight;
+}
+resizeCanvas();
+addEventListener("resize", resizeCanvas);
 
-document.addEventListener('DOMContentLoaded', function() {
-    const startButton = document.getElementById('startButton');
+/* Background mapa */
+const bg = new Image();
+bg.src = "../map/part1.png";
 
-    startButton.addEventListener('click', function() {
-        startGame();
-        startButton.style.display = 'none';
-    });
+/* Characters */
+const CHARACTERS = {
+  jason: {
+    idle: "../characters/jason1.png",
+    walk1: "../characters/jason2.png",
+    walk2: "../characters/jason1.png",
+    forwardOffset: Math.PI / 2,
+  },
+  lucia: {
+    idle: "../characters/lucia1.png",
+    walk1: "../characters/lucia2.png",
+    walk2: "../characters/lucia1.png",
+    forwardOffset: Math.PI / 2,
+  },
+};
 
+const keys = new Set();
+addEventListener("keydown", (e) => keys.add(e.key.toLowerCase()));
+addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
 
-function startGame() {
-    console.log("Game Started");
-    }
+const player = {
+  x: 0,
+  y: 0,
+  angle: 0,
+  speed: 220,
+  size: 120,
+};
+
+player.x = canvas.width / 2;
+player.y = canvas.height / 2;
+
+addEventListener("mousemove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  player.angle = Math.atan2(my - player.y, mx - player.x);
 });
 
-const jump = () => {
-    character.classList.add('jump');
-    setTimeout(() => {
-        character.classList.remove('jump');
-    }, 500)
+function clampPlayer() {
+  const half = player.size / 2;
+  player.x = Math.max(half, Math.min(player.x, canvas.width - half));
+  player.y = Math.max(half, Math.min(player.y, canvas.height - half));
 }
 
-const loop = setInterval(() => {
-    const rockPosition = rock.offsetLeft;
-    const characterPosition = +window.getComputedStyle(character).bottom.replace('px', '');
+let animT = 0;
+let walkFrame = 0;
+const WALK_FPS = 8;
 
-    if (rockPosition <= 160 && rockPosition > 0 && characterPosition < 200) {
-        rock.style.animation = 'none';
-        rock.style.left = `${rockPosition}px`
+let imgIdle, imgWalk1, imgWalk2;
+let SPRITE_FORWARD_OFFSET = 0;
 
-        character.style.animation = 'none';
-        character.style.bottom = `${characterPosition}px`;
+function loadCharacterSprites(charKey) {
+  const c = CHARACTERS[charKey];
+  SPRITE_FORWARD_OFFSET = c.forwardOffset;
 
-        gameOver = true;
+  imgIdle = new Image();
+  imgIdle.src = c.idle;
 
-        clearInterval(loop);
-    }
-}, 10);
+  imgWalk1 = new Image();
+  imgWalk1.src = c.walk1;
 
-document.addEventListener('keydown', jump)
+  imgWalk2 = new Image();
+  imgWalk2.src = c.walk2;
 
-//
-
-const background = document.querySelector('.background');
-let position = 0;
-let speed = 15; // ajuste a velocidade do scroll
-let gameOver = false;
-
-function moveBackground() {
-    if (!gameOver) {
-        position -= speed;
-        background.style.backgroundPositionX = position + "px";
-        requestAnimationFrame(moveBackground); // deixa suave e infinito
-    }
-    
+  return new Promise((resolve) => {
+    let count = 0;
+    const done = () => {
+      count++;
+      if (count === 3) resolve();
+    };
+    imgIdle.onload = done;
+    imgWalk1.onload = done;
+    imgWalk2.onload = done;
+  });
 }
 
-moveBackground();
+let started = false;
+let last = performance.now();
+
+function loop(now) {
+  const dt = (now - last) / 1000;
+  last = now;
+
+  const walking = keys.has("w");
+
+  if (walking) {
+    player.x += Math.cos(player.angle) * player.speed * dt;
+    player.y += Math.sin(player.angle) * player.speed * dt;
+
+    animT += dt;
+    if (animT >= 1 / WALK_FPS) {
+      animT = 0;
+      walkFrame = 1 - walkFrame;
+    }
+  } else {
+    animT = 0;
+    walkFrame = 0;
+  }
+
+  clampPlayer();
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+  const img = walking ? (walkFrame === 0 ? imgWalk1 : imgWalk2) : imgIdle;
+
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  ctx.rotate(player.angle + SPRITE_FORWARD_OFFSET);
+  ctx.drawImage(
+    img,
+    -player.size / 2,
+    -player.size / 2,
+    player.size,
+    player.size,
+  );
+  ctx.restore();
+
+  requestAnimationFrame(loop);
+}
+
+const overlay = document.getElementById("charSelect");
+
+function startGame(charKey) {
+  if (started) return;
+  started = true;
+
+  loadCharacterSprites(charKey).then(() => {
+    overlay.style.display = "none";
+    last = performance.now();
+    requestAnimationFrame(loop);
+  });
+}
+
+overlay.addEventListener("click", (e) => {
+  const btn = e.target.closest(".choice");
+  if (!btn) return;
+  startGame(btn.dataset.char);
+});
+
+bg.onload = () => {};

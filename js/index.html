@@ -1,27 +1,37 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Game FTS</title>
-    <link rel="stylesheet" href="../css/style.css">
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <title>Six Pixels - GTA 6 Pixel Game</title>
+    <link rel="stylesheet" href="../css/style.css" />
     <script defer src="./script.js"></script>
-</head>
-<body>
+  </head>
 
-    <button id="startButton">Start Game</button>
-
+  <body>
     <div class="game-board">
-        <img src="../images/rock.png" class="rock">
-        <div class="background"></div>
-        <img src="../images/character.gif" class="character">
+      <canvas id="game"></canvas>
 
+      <!-- Menu de escolha -->
+      <div id="charSelect" class="overlay">
+        <div class="overlay-box">
+          <h1>Escolha seu personagem</h1>
 
+          <div class="choices">
+            <button class="choice" data-char="jason">
+              <img src="../characters/choice-jason.png" alt="Jason" />
+              <span>Jason</span>
+            </button>
+
+            <button class="choice" data-char="lucia">
+              <img src="../characters/choice-lucia.png" alt="Lucia" />
+              <span>Lucia</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-    
-    <img src="../images/fundo.jpg" class="fundo">
-    
-    <div class="text">
-    <h1>Runner Boy</h1>
 
-</body>
+    <!-- Background Page -->
+    <img src="../images/background.png" class="fundo" />
+  </body>
 </html>
