@@ -57,4 +57,3 @@ No frameworks. No engines. Full control.
 ![Game](./screenshots/game.png)
 ![Choice](./screenshots/game-choice.png)
 
-```md
